@@ -179,14 +179,18 @@ export class SecureAPIClient {
       if (token) {
         let extractedTenantId = null;
 
-        // Handle static local token.
+// Handle static local token.
         if (token === "mock-token-123") {
-          extractedTenantId = "tenant-a";
+            extractedTenantId = "tenant-a";
         }
         // Check if it's a valid JWT
         else if (token.includes('.') && token.split('.').length === 3) {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          extractedTenantId = payload.user_metadata?.tenant_id || payload.tenant_id;
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            // The login endpoint stores tenant_id inside app_metadata (see backend/api/v1/login.py).
+            // Check app_metadata first, then user_metadata, then root level as fallbacks.
+            extractedTenantId = payload.app_metadata?.tenant_id
+                || payload.user_metadata?.tenant_id
+                || payload.tenant_id;
         }
 
         if (extractedTenantId) {
